@@ -4,8 +4,9 @@
 name: Upload Python Package
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+    - 'v*'
 
 jobs:
   release-build:
@@ -23,10 +24,22 @@ jobs:
           pip install -e ".[dev]"
           pip install build
 
-      - name: build release distributions
+      - name: Build release distributions
         run: |
-          # NOTE: put your own distribution build steps here.
           python -m build
+
+          # Export ONNX models
+          python tools/export_yolov8.py
+      
+      - name: Upload models to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: yolov8n.onnx
+          asset_name: yolov8n
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Yolov8n ONNX model"
 
       - name: upload dists
         uses: actions/upload-artifact@v4
