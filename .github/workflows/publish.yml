@@ -1,34 +1,31 @@
-# This workflows will upload a Python Package using Poetry when a release is created
+# This workflows will upload a Python Package when a release is created
 # For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
 
 name: Upload Python Package
+permissions:
+  contents: write
 
 on:
   push:
     tags:
     - 'v*'
 
-permissions:
-  contents: write
-
 jobs:
   release-build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -e ".[dev]"
-          pip install build
+          python -m pip install --upgrade pip
+          pip install -e .'[dev]'
 
       - name: Build release distributions
         run: |
+          pip install build
           python -m build
 
           # Export ONNX models
@@ -39,10 +36,9 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: yolov8n.onnx
-          asset_name: yolov8n
+          asset_name: yolov8n.onnx
           tag: ${{ github.ref }}
           overwrite: true
-          body: "Yolov8n ONNX model"
 
       - name: upload dists
         uses: actions/upload-artifact@v4
