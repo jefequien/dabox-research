@@ -17,7 +17,6 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 dependencies = [
-    "dabox",
     "opencv-python",
     "rich",
     "torch",
