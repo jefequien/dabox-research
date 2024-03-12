@@ -9,12 +9,20 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Only allow one build per branch at a time except on main.
+# This takes advantage of the lazy evaluation of the "||" operator. When the ref is main
+# the run_number will be included in the concurrency group making it unique but when
+# the ref is not main it will evaluate to false and the second half of the operator is
+# never evaluated, so the group is the same for all runs on that pr/branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref != 'refs/heads/main' || github.run_number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
