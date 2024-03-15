@@ -17,6 +17,11 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 dependencies = [
+    "dabox-project",
+    "onnx",
+    "onnxruntime",
+    "onnxruntime-gpu",
+    "onnxsim",
     "opencv-python",
     "rich",
     "torch",
