@@ -9,7 +9,6 @@ from PIL import Image
 from pathlib import Path
 from onnxconverter_common import float16
 
-
 from dabox_research.env import DEMO_DIR, DEFAULT_OUTPUT_DIR
 from dabox_research.util.drawing import draw_detections
 import torch
@@ -19,7 +18,7 @@ import torchvision.transforms as transforms
 class Preprocess(torch.nn.Module):
     def forward(self, x):
         x = transforms.functional.convert_image_dtype(x)
-        x = x.permute(0, 3, 1, 2)
+        x = x.permute(2, 0, 1).unsqueeze(0)
         return x
 
 class Postprocess(torch.nn.Module):
@@ -32,12 +31,11 @@ class Postprocess(torch.nn.Module):
         score_intermediate_result = self.gather(scores, idxTensor).max(axis=-1)
         score_result = score_intermediate_result.values
         classes_result = score_intermediate_result.indices
-        num_dets = torch.tensor(score_result.shape[-1])
 
         bbox_result = torchvision.ops.box_convert(bbox_result, in_fmt = "cxcywh", out_fmt = "xyxy")
         bbox_result[..., 0::2] /= self.input_size[0]
         bbox_result[..., 1::2] /= self.input_size[1]
-        return (bbox_result, score_result,  classes_result, num_dets)
+        return (bbox_result, score_result,  classes_result)
 
     def gather(self, target, idxTensor):
         '''
@@ -50,27 +48,20 @@ class Postprocess(torch.nn.Module):
         pick_indices = idxTensor[:,-1:].repeat(1,target.shape[1]).unsqueeze(0)
         return torch.gather(target.permute(0,2,1),1,pick_indices)
 
-def make_preproc_onnx(size: tuple[int, int], export_dir: Path) -> Path:
+def make_preproc_onnx(input_size: tuple[int, int], export_dir: Path) -> Path:
     model_preproc = Preprocess()
-
-    w, h = size
-    dummy_input = torch.randint(255, (1, h, w, 3), dtype=torch.uint8)
-
-    dynamic = {
-        'input': {0: 'batch', 1: 'height', 2: 'width'},
-        'output': {0 : 'batch'}
-    }
-
+    dummy_input = torch.randint(255, (input_size[1], input_size[0], 3), dtype=torch.uint8)
+    
     onnx_path = export_dir /'preproc.onnx'
-    torch.onnx.export(model_preproc,
-                    dummy_input,
-                    onnx_path,
-                    opset_version=17,
-                    do_constant_folding=True,
-                    input_names = ['input'],
-                    output_names=['output'],
-                    dynamic_axes=dynamic,
-                    verbose=True)
+    torch.onnx.export(
+        model_preproc,
+        dummy_input,
+        onnx_path,
+        opset_version=17,
+        do_constant_folding=True,
+        input_names=['input'],
+        output_names=['output'],
+    )
     return onnx_path
 
 def postproc_onnx(input_size: tuple[int, int], export_dir: Path) -> Path:
@@ -92,7 +83,7 @@ def postproc_onnx(input_size: tuple[int, int], export_dir: Path) -> Path:
     onnx_path = export_dir / "postproc.onnx"
     torch.onnx.export(model_postproc, (torch_indices, torch_boxes, torch_scores), onnx_path,
                     input_names=["selected_indices", "boxes", "scores"], 
-                    output_names=["det_bboxes", "det_scores", "det_classes", "num_dets"], 
+                    output_names=["det_bboxes", "det_scores", "det_classes"], 
                     dynamic_axes={
                         "boxes":{0:"batch",1:"boxes",2:"num_anchors"},
                         "scores":{0:"batch",1:"classes",2:"num_anchors"},
@@ -196,6 +187,7 @@ def main():
     onnx_path = add_preprocessing_to_onnx(onnx_path, input_size, export_dir)
     onnx_path = add_postprocessing_to_onnx(onnx_path, input_size, export_dir)
 
+    # Simplify and convert model to float16
     sim_model, check = onnxsim.simplify(onnx.load_model(onnx_path))
     assert check, "Simplified ONNX model could not be validated"
     sim_model = float16.convert_float_to_float16(sim_model)
@@ -213,11 +205,8 @@ def main():
 
     image = Image.open(DEMO_DIR/ "image0.png").convert("RGB")
     image = np.array(image.resize(input_size))
-    input_tensor = image[np.newaxis, :, :, :]
-    print(input_tensor.shape, input_tensor.dtype)
-
     for idx in tqdm(range(1000)):
-        inputs = {input_name: input_tensor for input_name, input_tensor in zip(input_names, [input_tensor])}
+        inputs = {input_name: input_tensor for input_name, input_tensor in zip(input_names, [image])}
         output_tensors = session.run(output_names, inputs)
         outputs = {output_name: output_tensor for output_name, output_tensor in zip(output_names, output_tensors)}
 
