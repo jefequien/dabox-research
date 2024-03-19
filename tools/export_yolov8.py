@@ -13,7 +13,8 @@ def main():
     input_size = (640, 480)
     for model_name in model_names:
         model = YOLO(f"{model_name}.pt")
-        model.export(format='onnx',imgsz=[input_size[1], input_size[0]], half=True, device=0, simplify=True)
+        model.export(format='onnx',imgsz=[input_size[1], input_size[0]])
+        # model.export(format='onnx',imgsz=[input_size[1], input_size[0]], half=True, device=0, simplify=True)
 
         move_file(f"{model_name}.pt", DEFAULT_OUTPUT_DIR / "pt" / f"{model_name}.pt")
         move_file(f"{model_name}.onnx", DEFAULT_OUTPUT_DIR / "onnx" / f"{model_name}.onnx")

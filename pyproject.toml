@@ -18,9 +18,9 @@ classifiers = [
 ]
 dependencies = [
     "dabox-project",
+    "netron",
     "onnx",
     "onnxruntime",
-    "onnxruntime-gpu",
     "onnxsim",
     "opencv-python",
     "rich",
