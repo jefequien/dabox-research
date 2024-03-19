@@ -101,16 +101,14 @@ def add_preprocessing_to_onnx(onnx_path: Path, input_size: tuple[int, int], expo
     onnx_model = onnx.load(onnx_path)
 
     # add prefix, resolve names conflits
-    prep_with_prefix = onnx.compose.add_prefix(preproc_model, prefix="prep_")
-
-    model_prep = onnx.compose.merge_models(
-        prep_with_prefix,
-        onnx_model,    
-        io_map=[('prep_output', # output prep model
-                'images')])     # input yolov8 model
-
+    preproc_model_with_prefix = onnx.compose.add_prefix(preproc_model, prefix="preproc_")
+    onnx_model = onnx.compose.merge_models(
+        preproc_model_with_prefix,
+        onnx_model,
+        io_map=[('preproc_output', 'images')]
+    )
     onnx_path = export_dir / "preproc+model.onnx"
-    onnx.save(model_prep, onnx_path)
+    onnx.save(onnx_model, onnx_path)
     return onnx_path
 
 def add_postprocessing_to_onnx(onnx_path: Path, input_size: tuple[int, int], export_dir: Path) -> Path:
