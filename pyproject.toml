@@ -18,6 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "dabox-project",
+    "huggingface_hub",
     "netron",
     "onnx",
     "onnxconverter-common",
