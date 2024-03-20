@@ -177,7 +177,7 @@ def add_postprocessing_to_onnx(onnx_path: Path, input_size: tuple[int, int], exp
 def main():
     input_size = (640, 480)
 
-    onnx_path = DEFAULT_OUTPUT_DIR / "onnx" / "yolov8n.onnx"
+    onnx_path = DEFAULT_OUTPUT_DIR / "onnx" / "yolov8m.onnx"
     export_dir = DEFAULT_OUTPUT_DIR / "export"
     if not export_dir.exists():
         export_dir.mkdir(parents=True, exist_ok=True)
@@ -188,7 +188,7 @@ def main():
     # Simplify and convert model to float16
     sim_model, check = onnxsim.simplify(onnx.load_model(onnx_path))
     assert check, "Simplified ONNX model could not be validated"
-    sim_model = float16.convert_float_to_float16(sim_model)
+    # sim_model = float16.convert_float_to_float16(sim_model)
     onnx_path = export_dir / "simplified.onnx"
     onnx.save(sim_model, onnx_path)
 
