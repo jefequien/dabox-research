@@ -1,6 +1,8 @@
 """File utilities"""
-from pathlib import Path
+
 import shutil
+from pathlib import Path
+
 
 def move_file(src_path: Path, dst_path: Path) -> None:
     """Move file from src_path to dst_path

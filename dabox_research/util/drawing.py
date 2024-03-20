@@ -89,7 +89,13 @@ rng = np.random.default_rng(3)
 colors = rng.uniform(0, 255, size=(len(class_names), 3))
 
 
-def draw_detections(image: np.ndarray, boxes: np.ndarray, scores: np.ndarray, class_ids: np.ndarray, mask_alpha:float=0.3) -> np.ndarray:
+def draw_detections(
+    image: np.ndarray,
+    boxes: np.ndarray,
+    scores: np.ndarray,
+    class_ids: np.ndarray,
+    mask_alpha: float = 0.3,
+) -> np.ndarray:
     img_height, img_width = image.shape[:2]
     boxes[..., 0::2] *= img_width
     boxes[..., 1::2] *= img_height
