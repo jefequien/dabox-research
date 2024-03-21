@@ -255,6 +255,7 @@ def main():
 
         image = Image.open(DEMO_DIR / "image0.png").convert("RGB")
         image = np.array(image.resize(input_size))
+        image = np.zeros(image.shape, dtype=np.uint8)
         for idx in tqdm(range(10)):
             inputs = {
                 input_name: input_tensor
@@ -265,6 +266,8 @@ def main():
                 output_name: output_tensor
                 for output_name, output_tensor in zip(output_names, output_tensors)
             }
+            for k, v in outputs.items():
+                print(k, v.shape)
 
             if idx == 0:
                 det_bboxes = outputs["det_bboxes"][0]
