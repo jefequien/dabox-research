@@ -1,19 +1,14 @@
 from pathlib import Path
 
-import numpy as np
 import onnx
-import onnxruntime
 import onnxsim
 import torch
 import torchvision
 from onnx import TensorProto
-from PIL import Image
 from torchvision import transforms
-from tqdm import tqdm
 from ultralytics import YOLO
 
-from dabox_research.env import DEFAULT_OUTPUT_DIR, DEMO_DIR
-from dabox_research.util.drawing import draw_detections
+from dabox_research.env import DEFAULT_OUTPUT_DIR
 from dabox_research.util.file_io import move_file
 
 
@@ -223,11 +218,13 @@ def add_postprocessing_to_onnx(
 
 
 def main():
-    input_size = (640, 480)
     model_names = ["yolov8n", "yolov8s", "yolov8m", "yolov8l", "yolov8x"]
+    input_size = (640, 480)
 
     for model_name in model_names:
         export_dir = DEFAULT_OUTPUT_DIR / "export" / model_name
+        export_onnx_path = export_dir / f"dabox_{model_name}.onnx"
+
         model = YOLO(f"{model_name}.pt")
         model.export(format="onnx", imgsz=[input_size[1], input_size[0]])
         pt_path = export_dir / f"{model_name}.pt"
@@ -241,39 +238,7 @@ def main():
         # Simplify and convert model to float16
         sim_model, check = onnxsim.simplify(onnx.load_model(onnx_path))
         assert check, "Simplified ONNX model could not be validated"
-        onnx_path = export_dir / f"dabox_{model_name}.onnx"
-        onnx.save(sim_model, onnx_path)
-
-        providers = onnxruntime.get_available_providers()
-        # Disable Tensorrt because it is slow to startup
-        if "TensorrtExecutionProvider" in providers:
-            providers.remove("TensorrtExecutionProvider")
-        session = onnxruntime.InferenceSession(onnx_path, providers=providers)
-        input_names = [model_input.name for model_input in session.get_inputs()]
-        output_names = [model_output.name for model_output in session.get_outputs()]
-        print(input_names, output_names)
-
-        image = Image.open(DEMO_DIR / "image0.png").convert("RGB")
-        image = np.array(image.resize(input_size))
-        for idx in tqdm(range(10)):
-            inputs = {
-                input_name: input_tensor
-                for input_name, input_tensor in zip(input_names, [image])
-            }
-            output_tensors = session.run(output_names, inputs)
-            outputs = {
-                output_name: output_tensor
-                for output_name, output_tensor in zip(output_names, output_tensors)
-            }
-
-            if idx == 0:
-                det_bboxes = outputs["det_bboxes"][0]
-                det_scores = outputs["det_scores"][0]
-                det_classes = outputs["det_classes"][0]
-
-                image_vis = draw_detections(image, det_bboxes, det_scores, det_classes)
-                image_vis = Image.fromarray(image_vis)
-                image_vis.save(export_dir / "image_vis.png")
+        onnx.save(sim_model, export_onnx_path)
 
 
 if __name__ == "__main__":
