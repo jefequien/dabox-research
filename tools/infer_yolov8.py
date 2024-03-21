@@ -1,24 +1,27 @@
-import onnxruntime
-import numpy as np
-from tqdm import tqdm
-from PIL import Image
 from pathlib import Path
 
-from dabox_research.env import DEMO_DIR, DEFAULT_OUTPUT_DIR
+import numpy as np
+import onnxruntime
+from PIL import Image
+from tqdm import tqdm
+
+from dabox_research.env import DEFAULT_OUTPUT_DIR, DEMO_DIR
 from dabox_research.util.drawing import draw_detections
+
 
 def save_image(image: Image, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path)
 
+
 def main():
     model_names = ["yolov8n", "yolov8s", "yolov8m", "yolov8l", "yolov8x"]
     input_size = (640, 480)
-    
+
     for model_name in model_names:
         export_dir = DEFAULT_OUTPUT_DIR / "export" / model_name
         export_onnx_path = export_dir / f"dabox_{model_name}.onnx"
-    
+
         providers = onnxruntime.get_available_providers()
         # Disable Tensorrt because it is slow to startup
         if "TensorrtExecutionProvider" in providers:
@@ -48,7 +51,10 @@ def main():
 
                 image_vis = draw_detections(image, det_bboxes, det_scores, det_classes)
                 image_vis = Image.fromarray(image_vis)
-                save_image(image_vis, DEFAULT_OUTPUT_DIR / "infer" / f"{model_name}.png")
+                save_image(
+                    image_vis, DEFAULT_OUTPUT_DIR / "infer" / f"{model_name}.png"
+                )
+
 
 if __name__ == "__main__":
     main()

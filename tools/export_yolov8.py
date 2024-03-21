@@ -224,7 +224,7 @@ def main():
     for model_name in model_names:
         export_dir = DEFAULT_OUTPUT_DIR / "export" / model_name
         export_onnx_path = export_dir / f"dabox_{model_name}.onnx"
-        
+
         model = YOLO(f"{model_name}.pt")
         model.export(format="onnx", imgsz=[input_size[1], input_size[0]])
         pt_path = export_dir / f"{model_name}.pt"

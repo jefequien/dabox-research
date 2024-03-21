@@ -1,8 +1,9 @@
 """Open a PR to upload a model to huggingface"""
+
 import argparse
+from pathlib import Path
 
 from huggingface_hub import HfApi
-from pathlib import Path
 
 from dabox_research.env import HUGGING_FACE_MODEL_ZOO_REPO
 
@@ -26,8 +27,12 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--src-path", required=True, help="Path of file to upload")
-    parser.add_argument("-d", "--dst-path", required=True, help="Path in repo to upload")
+    parser.add_argument(
+        "-s", "--src-path", required=True, help="Path of file to upload"
+    )
+    parser.add_argument(
+        "-d", "--dst-path", required=True, help="Path in repo to upload"
+    )
     input_args = parser.parse_args()
     print(input_args)
     main(input_args)
